@@ -1,0 +1,310 @@
+{
+  "name": "rag-chatbotworkflow",
+  "nodes": [
+    {
+      "_comment": "Trigger node that initiates the flow when a user submits a file via a form",
+      "parameters": {
+        "formTitle": "Analyze Your File",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "File Element",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "acceptFileTypes": ".txt, .pdf, .md",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [-1160, -140],
+      "id": "d1e1ceff-9dae-4a22-bcf2-3e98ac987bf0",
+      "name": "On form submission",
+      "webhookId": "4e98ecfe-0082-4dca-b9d9-34a7878737f5"
+    },
+    {
+      "_comment": "Stores the embedded document vectors into Pinecone index",
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "n8n",
+          "mode": "list",
+          "cachedResultName": "n8n"
+        },
+        "embeddingBatchSize": 1,
+        "options": {
+          "pineconeNamespace": "Project 1"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [-920, -140],
+      "id": "6edec078-0dcd-4296-a2b5-71a97179a7cc",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "L28qzUefnJMibsu2",
+          "name": "PineconeApi account 2"
+        }
+      }
+    },
+    {
+      "_comment": "Loads uploaded binary document and prepares it for text splitting",
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [-820, 80],
+      "id": "8fa141d7-904a-433b-80ea-0bb0ba479f23",
+      "name": "Default Data Loader"
+    },
+    {
+      "_comment": "Splits text into chunks using a recursive strategy (e.g., for better embedding)",
+      "parameters": {
+        "chunkSize": 500,
+        "chunkOverlap": 100,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [-740, 280],
+      "id": "8df1781c-b7f1-4553-abe5-b4e149623bab",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "_comment": "Retrieval-QA chain that links language model + retriever to answer user queries",
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainRetrievalQa",
+      "typeVersion": 1.6,
+      "position": [-1880, -200],
+      "id": "6e413468-18c7-409f-8dac-474638190f9b",
+      "name": "Question and Answer Chain"
+    },
+    {
+      "_comment": "Vector store retriever to fetch relevant chunks based on a query",
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.retrieverVectorStore",
+      "typeVersion": 1,
+      "position": [-1760, 20],
+      "id": "233f73ca-adba-49d0-a84b-ab40f3884d49",
+      "name": "Vector Store Retriever"
+    },
+    {
+      "_comment": "Another Pinecone vector store used for chat queries (retrieval phase)",
+      "parameters": {
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "n8n",
+          "mode": "list",
+          "cachedResultName": "n8n"
+        },
+        "options": {
+          "pineconeNamespace": "Project 1"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [-1760, 220],
+      "id": "27d71a2d-57ff-4a21-8267-a4e8b5eb04b2",
+      "name": "Pinecone Vector Store1",
+      "credentials": {
+        "pineconeApi": {
+          "id": "L28qzUefnJMibsu2",
+          "name": "PineconeApi account 2"
+        }
+      }
+    },
+    {
+      "_comment": "LLM model (Gemini) used to answer queries based on retrieved context",
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [-1880, 20],
+      "id": "4d505c23-fdce-4500-ab72-c1c271e5870b",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "y6c2QE4hm74BMzGB",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "_comment": "Trigger node that starts the QnA pipeline when a user sends a message",
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [-2100, 100],
+      "id": "33c538e2-01ac-403b-ab9c-eee06e6ea066",
+      "name": "When chat message received",
+      "webhookId": "381afa74-50fa-4940-8358-b2e5671a6b37"
+    },
+    {
+      "_comment": "OpenAI embedding model used to convert document chunks into vector form for ingestion",
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [-940, 80],
+      "id": "757d2acf-8334-42f6-adfb-fec975f72551",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "LFVVOXIVx4XCiFOr",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "_comment": "OpenAI embedding model used during the retrieval phase for user chat queries",
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [-1680, 420],
+      "id": "0e54b6b2-1dd9-4623-a09d-0a53e08f616e",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "LFVVOXIVx4XCiFOr",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "_comment": "The rest of the structure below remains unchanged (connections, metadata, etc.)",
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store": {
+      "main": [[]]
+    },
+    "Vector Store Retriever": {
+      "ai_retriever": [
+        [
+          {
+            "node": "Question and Answer Chain",
+            "type": "ai_retriever",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store1": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Vector Store Retriever",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Question and Answer Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Question and Answer Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9dfde414-0455-4315-bbe1-8d9311176d31",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "39f2035ef9810f0330f90bd6782a6495f66d467c0f3038e486e7617b833bba96"
+  },
+  "id": "tQuLyr9EcKz1Gshl",
+  "tags": []
+}
