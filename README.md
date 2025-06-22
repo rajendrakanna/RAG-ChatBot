@@ -35,12 +35,3 @@ This project demonstrates how to build a **Retrieval-Augmented Generation (RAG)*
 - Google Gemini (PaLM) API access
 - LangChain integration enabled in n8n
 
----
-
-## 🚀 Getting Started
-
-1. **Clone the repository**
-
-```bash
-git clone https://github.com/yourusername/n8n-rag-chatbot.git
-cd n8n-rag-chatbot
